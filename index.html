@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T-LESSA: Temporal-Logic Event Specification Steering of Video Diffusion Attention</title>
+  <meta name="description"
+        content="T-LESSA translates a text prompt into a temporal-logic specification and steers a frozen text-to-video model's cross-attention toward satisfying it, without training.">
+  <meta name="keywords" content="text-to-video, video diffusion, temporal logic, inference-time guidance, cross-attention steering, neuro-symbolic">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="T-LESSA: Temporal-Logic Event Specification Steering of Video Diffusion Attention">
+  <meta property="og:description" content="Training-free temporal-logic steering for text-to-video generation.">
+  <meta property="og:url" content="https://utaustin-swarmlab.github.io/tlessa/">
+  <meta property="og:image" content="https://utaustin-swarmlab.github.io/tlessa/static/images/teaser.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="stylesheet" href="./static/css/tlessa.css">
+  <link rel="icon" href="./static/images/favicon.png" type="image/png">
+
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="./static/js/gallery-data.js"></script>
+  <script defer src="./static/js/tlessa.js"></script>
+  <style>
+    @media only screen and (max-width: 768px) {
+      body {
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="https://utaustin-swarmlab.github.io/">
+        <span class="icon">
+          <i class="fas fa-home"></i>
+        </span>
+      </a>
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://utaustin-swarmlab.github.io/nsvs/">
+            NSVS
+          </a>
+          <a class="navbar-item" href="https://utaustin-swarmlab.github.io/NeuS-V">
+            NeuS-V
+          </a>
+          <a class="navbar-item" href="https://utaustin-swarmlab.github.io/NeuS-QA">
+            NeuS-QA
+          </a>
+          <a class="navbar-item" href="https://utaustin-swarmlab.github.io/CrossView">
+            CrossView
+          </a>
+          <a class="navbar-item" href="https://utaustin-swarmlab.github.io/VSeek">
+            VSeek
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            <span class="name">T-LESSA</span>: Temporal-Logic Event Specification Steering of Video Diffusion Attention
+          </h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Minkyu Choi<sup>1</sup>,</span>
+            <span class="author-block">Harsh Goel<sup>1</sup>,</span>
+            <span class="author-block">Soamar Homsi<sup>2</sup>,</span>
+            <span class="author-block">Sandeep Chinchali<sup>1</sup></span>
+          </div>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>The University of Texas at Austin,</span>
+            <span class="author-block"><sup>2</sup>Air Force Research Laboratory</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- AFRL-cleared public-release PDF (case AFRL-2026-4443). TODO: add an arXiv button once posted. -->
+              <span class="link-block">
+                <a href="./static/pdf/tlessa.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <!-- TODO: link github.com/UTAustin-SwarmLab/T-LESSA and its
+                   supplementary/tlvbench_specs folder once the repo is public. -->
+              <span class="link-block">
+                <a class="external-link button is-normal is-rounded is-dark is-static" aria-disabled="true">
+                  <span class="icon">
+                    <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code (coming soon)</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a class="external-link button is-normal is-rounded is-dark is-static" aria-disabled="true">
+                  <span class="icon">
+                    <i class="fas fa-database"></i>
+                  </span>
+                  <span>TLVBench (coming soon)</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#videos" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-film"></i>
+                  </span>
+                  <span>Videos</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container is-max-desktop" style="margin-top: 1.5rem;">
+      <figure class="figure-block">
+        <img src="static/images/teaser.jpg" class="zoomable-image"
+             alt="Overview of T-LESSA. Top: an unsteered text-to-video model, asked for a caterpillar, then a chrysalis, then a butterfly, starts with a chrysalis and never shows the butterfly. Bottom: T-LESSA turns the prompt into a temporal-logic specification, reads soft event traces from cross-attention, scores them with a differentiable temporal-logic objective, and feeds the gradient back as a persistent attention-logit bias; the video then shows all events in order.">
+        <figcaption>
+          <strong>T-LESSA steers video generation toward satisfying a temporal-logic specification.</strong>
+          We ask for a caterpillar that becomes a chrysalis, after which a butterfly shows up with unfolded wings.
+          Unsteered CogVideoX-5B starts with the chrysalis and misses the first and last events.
+          T-LESSA first turns the prompt into the specification
+          \(\Diamond(A \wedge \Diamond(B \wedge \Diamond(C \wedge D)))\), then guides each denoising step
+          toward it, and the video shows all four events in the correct order.
+        </figcaption>
+      </figure>
+
+      <p class="tldr">
+        Text-to-video models still miss events, merge them, or show them in the wrong order.
+        <strong>T-LESSA</strong> writes the prompt as a temporal-logic specification and steers a frozen
+        model's cross-attention toward satisfying it, with no training and no latent optimization.
+      </p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="num">+21.8%</div>
+          <div class="label">TL satisfaction on TLVBench, averaged over four backbones</div>
+        </div>
+        <div class="stat">
+          <div class="num">+14.3%</div>
+          <div class="label">temporal completion</div>
+        </div>
+        <div class="stat">
+          <div class="num">14 / 16</div>
+          <div class="label">T2V-CompBench backbone&ndash;category pairs improved</div>
+        </div>
+        <div class="stat">
+          <div class="num">1.7&ndash;13.5%</div>
+          <div class="label">extra generation time</div>
+        </div>
+      </div>
+      <p class="table-caption has-text-centered">Gains are relative to the same backbone without steering.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page-section" id="abstract">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3 section-title">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Recent advancements in generative video promise to transform challenging scenarios into training data:
+            rare driving situations for autonomous vehicles, synthetic scenes for robot simulation, and realistic
+            deepfakes for stress testing detection models. However, in practice, we still prompt a model and pray
+            to get faithful videos. While a large body of research exists on generating good video, there is a lack
+            of methods to enforce temporal and logical requirements (e.g., ordering, negation, co-occurrence) during
+            video generation. Prior work has focused on fine-tuning with preference feedback or verifiable rewards.
+            However, these methods require additional training and reduce a temporal-logic requirement to a scalar
+            reward. This limitation has motivated a recent line of work that steers video generation at inference
+            time without any training. Although these approaches control when each required event appears, they do
+            not ensure that the generated videos align with their temporal and logical requirements. Therefore, we
+            introduce T-LESSA, a training-free method that steers video generation toward satisfying a
+            temporal-logic requirement. We show that T-LESSA improves temporal completion by <strong>14.3%</strong>
+            and, across four backbones, temporal-logic satisfaction by <strong>21.8%</strong> over the unsteered
+            baseline, at 1.7% to 13.5% additional generation time. Furthermore, T-LESSA improves compositional
+            alignment in 14 of 16 backbone-category pairs on T2V-CompBench, and largely preserves video quality.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page-section" id="method">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-title">How T-LESSA Works</h2>
+    <p class="section-lead">
+      Temporal logic is the intermediate representation between the prompt and the denoiser.
+      From it, T-LESSA builds a differentiable objective and applies its gradient to cross-attention at every
+      steered denoising step.
+    </p>
+
+    <div class="steps content">
+      <div class="step">
+        <div>
+          <h3>Translate the prompt into a temporal-logic specification</h3>
+          <p>
+            An LLM agent splits the prompt into atomic events, assigns a proposition to each, and writes their
+            temporal and logical relations as a finite-trace formula. A validation pass checks that every
+            proposition is declared and grounded in a phrase of the prompt. For
+            <em>&ldquo;A dog enters the room, and afterward the dog sits down. No cat appears,&rdquo;</em>
+            the agent returns
+          </p>
+          <div class="math-block">$$\varphi = \Diamond\big(a \wedge \mathsf{X}\Diamond b\big) \wedge \Box\neg c,$$</div>
+          <p>with \(a\) = &ldquo;a dog enters the room&rdquo;, \(b\) = &ldquo;the dog sits down&rdquo; and \(c\) = &ldquo;cat appears&rdquo;.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Read a soft event trace from cross-attention</h3>
+          <p>
+            At denoising step \(i\), the attention mass that video tokens at temporal position \(t\) assign to the
+            phrase of proposition \(\rho\) gives an event score in \([0,1]\), averaged over the selected heads
+            \(\mathcal{C}\) and the \(N_s\) spatial tokens:
+          </p>
+          <div class="math-block">$$\lambda_{i,t,\rho} = \frac{1}{|\mathcal{C}|\,N_s}\sum_{r\in\mathcal{C}}\sum_{s=1}^{N_s}\sum_{j\in I_\rho}\alpha_{i,r,t,s,j}.$$</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Score the trace with a differentiable TL objective</h3>
+          <p>
+            Each score is treated as a Bernoulli parameter. The specification's deterministic automaton runs over
+            the time-unrolled trace, which gives a discrete-time Markov chain, and a bounded-reachability PCTL
+            query asks how likely the chain is to end in an accepting state. Backward dynamic programming answers
+            it exactly:
+          </p>
+          <div class="math-block">$$V_{i,T}(q)=\mathbf{1}\{q\in F_\varphi\},\qquad V_{i,t-1}(q)=\sum_{q'}P^{\varphi}_{i,t}(q,q')\,V_{i,t}(q'),\qquad S_\varphi(\lambda_i)=V_{i,0}(q^0_\varphi).$$</div>
+          <p>
+            \(S_\varphi\) is the probability of satisfying \(\varphi\) under this attention-based model, not a
+            calibrated probability that the rendered video satisfies it.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Steer attention with the gradient</h3>
+          <p>
+            The normalized gradient of \(S_\varphi\) accumulates in a persistent, bounded bias \(B\) that is
+            added to the attention logits of each event's tokens at the next denoising step. Model weights and
+            diffusion latents are never optimized.
+          </p>
+          <div class="math-block">$$\hat g_i=\frac{\nabla_{\lambda_i}S_\varphi(\lambda_i)}{\lVert\nabla_{\lambda_i}S_\varphi(\lambda_i)\rVert_\infty},\qquad B_{i+1}=\Pi_{\mathcal{B}}\big(B_i+\eta\,\hat g_i\big),\qquad \mathcal{B}=\{B:\lVert B\rVert_\infty\le b_{\max}\}.$$</div>
+          <p>By default we steer the first 40 of 50 denoising steps.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="theorem content">
+      <strong>Agreement on binary traces.</strong>
+      \(S_\varphi\) is multi-affine in the event scores, and on every binary trace it equals the classical
+      finite-trace verdict: \(S_\varphi(\sigma) = \mathbf{1}\{\delta_\varphi^*(q^0_\varphi,\sigma)\in F_\varphi\}\).
+      The continuous score therefore agrees with classical temporal-logic evaluation whenever events are fully present or absent.
+    </div>
+  </div>
+</section>
+
+<section class="page-section" id="tlvbench">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-title">TLVBench</h2>
+    <p class="section-lead">
+      We introduce TLVBench, a benchmark of 400 prompts that checks whether generated videos satisfy finite-trace
+      temporal-logic specifications. Each prompt comes with its specification and the atomic propositions of its
+      events, grounded as character spans in the prompt.
+    </p>
+    <div class="spec-grid">
+      <div class="spec-card">
+        <div class="kicker">Logical &middot; 100 prompts</div>
+        <h3>NEG</h3>
+        <div class="formula">\(\Diamond A \wedge \Box\neg B\) &mdash; the scene appears and the excluded object never does.</div>
+        <div class="example">
+          <span class="ev c-A">a man jogging down a city sidewalk past storefronts on a sunny morning<span class="tag">A</span></span>,
+          without any <span class="ev never c-never">cars<span class="tag">B</span></span>.
+        </div>
+      </div>
+      <div class="spec-card">
+        <div class="kicker">Logical &middot; 100 prompts</div>
+        <h3>CONJ</h3>
+        <div class="formula">\(\Diamond A \wedge \Diamond B\) &mdash; both objects appear, often an unusual pair.</div>
+        <div class="example">
+          <span class="ev c-A">a cactus<span class="tag">A</span></span>.
+          <span class="ev c-B">a trumpet<span class="tag">B</span></span>.
+        </div>
+      </div>
+      <div class="spec-card">
+        <div class="kicker">Temporal &middot; 100 prompts</div>
+        <h3>ORDER</h3>
+        <div class="formula">\(\Diamond(A \wedge \Diamond(B \wedge \Diamond C))\) &mdash; three events in this order.</div>
+        <div class="example">
+          <span class="ev c-A">a deflated flat balloon<span class="tag">A</span></span>.
+          <span class="ev c-B">a fully inflated round balloon<span class="tag">B</span></span>.
+          <span class="ev c-C">torn rubber pieces of a popped balloon<span class="tag">C</span></span>.
+        </div>
+      </div>
+      <div class="spec-card">
+        <div class="kicker">Temporal-logical &middot; 100 prompts</div>
+        <h3>TEMPLOG</h3>
+        <div class="formula">\(\Diamond(A \wedge \Diamond B) \wedge \Box\neg C\) &mdash; two events in order, and one object never appears.</div>
+        <div class="example">
+          <span class="ev c-A">a swimmer standing at the edge of a pool<span class="tag">A</span></span>, then
+          <span class="ev c-B">the swimmer diving into the water<span class="tag">B</span></span>.
+          The video contains no <span class="ev never c-never">goggles<span class="tag">C</span></span>.
+        </div>
+      </div>
+    </div>
+    <p class="table-caption has-text-centered">
+      Every prompt starts with &ldquo;A realistic high-quality cinematic video.&rdquo;, omitted here.
+      We also evaluate on StoryEval, TCBench, T2V-CompBench and VBench.
+    </p>
+  </div>
+</section>
+
+<section class="page-section" id="videos">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-title">Video Comparisons</h2>
+    <p class="section-lead">
+      Every card uses one prompt and one seed for all methods. Colored phrases are the events of the
+      specification, and a struck-through red phrase must never appear.
+    </p>
+
+    <div id="gallery">
+      <div class="g-tabs" role="tablist">
+        <button class="g-tab" role="tab" type="button" data-view="selected" aria-selected="true">Selected examples</button>
+        <button class="g-tab" role="tab" type="button" data-view="sample" aria-selected="false">Unfiltered sample</button>
+      </div>
+      <div class="g-about">
+        <p data-view="selected">
+          Forty pairs chosen for this page. Candidates were ranked by how much both VLM judges preferred T-LESSA
+          over the comparator, then kept only if the difference is visible in still frames.
+          The note under each pair says what to look for.
+        </p>
+        <p data-view="sample" hidden>
+          Not curated. For each backbone and class, these are the first six prompt ids in alphabetical order,
+          with every method on one shared seed. The sample was fixed before any clip was viewed,
+          so it includes failures.
+        </p>
+      </div>
+      <div class="g-filters"></div>
+      <div class="g-list" aria-live="polite"></div>
+      <div class="g-more" hidden>
+        <button class="button is-rounded" type="button">Show more</button>
+      </div>
+      <noscript><p class="g-empty">The video gallery needs JavaScript.</p></noscript>
+    </div>
+  </div>
+</section>
+
+<section class="page-section" id="qualitative">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-title">Against Inference-Time Guidance</h2>
+    <figure class="figure-block" style="max-width: 46rem;">
+      <img src="static/images/qualitative.jpg" class="zoomable-image"
+           alt="Frame strips for three TLVBench prompts. NEG: VideoCrafter2 and Free2Guide show cars that the prompt excludes, T-LESSA shows none. ORDER: CogVideoX-5B starts at the seedling and Video-MSG never shows a seed, while T-LESSA shows seed, sprout and seedling in order. CONJ: VideoCrafter2 and Free2Guide fail to draw a blue backpack, T-LESSA draws both the red ball and the blue backpack.">
+      <figcaption>
+        <strong>(A) NEG:</strong> VideoCrafter2 and Free2Guide generate cars although the prompt excludes them
+        (red boxes); T-LESSA does not.
+        <strong>(B) ORDER:</strong> CogVideoX-5B starts with the seedling and misses the first two events, and
+        Video-MSG never begins with a seed; T-LESSA shows seed, sprout and two-leaf seedling in order.
+        <strong>(C) CONJ:</strong> VideoCrafter2 draws a bluish ball instead of a blue backpack and Free2Guide gets
+        neither object right; T-LESSA generates both.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="page-section" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-title">Results</h2>
+
+    <div class="result-block">
+      <h3 class="title is-4">T-LESSA improves every class on every backbone</h3>
+      <div class="table-container"><table class="table is-narrow is-hoverable results-table">
+<thead>
+<tr><th class="method">Backbone</th><th class="method">Method</th><th colspan="3">NEG</th><th colspan="3">CONJ</th><th colspan="3">ORDER</th><th colspan="3">TEMPLOG</th></tr>
+<tr><th></th><th></th><th>Q</th><th>I3</th><th>NV</th><th>Q</th><th>I3</th><th>NV</th><th>Q</th><th>I3</th><th>NV</th><th>Q</th><th>I3</th><th>NV</th></tr>
+</thead><tbody>
+<tr class="group-start"><td class="method">Wan2.1-14B</td><td class="method">Unsteered</td><td>.559</td><td>.472</td><td>.516</td><td>.698</td><td>.796</td><td>.654</td><td>.569</td><td>.701</td><td>.204</td><td>.307</td><td>.296</td><td>.233</td></tr>
+<tr><td class="method"></td><td class="method">SwitchCraft</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td><strong>.670<span class="sig">*</span></strong></td><td><strong>.759<span class="sig">*</span></strong></td><td>.212</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr class="ours"><td class="method"></td><td class="method">T-LESSA (ours)</td><td><strong>.652<span class="sig">*</span></strong></td><td><strong>.603<span class="sig">*</span></strong></td><td><strong>.630<span class="sig">*</span></strong></td><td><strong>.760<span class="sig">*</span></strong></td><td><strong>.874<span class="sig">*</span></strong></td><td><strong>.743<span class="sig">*</span></strong></td><td>.622<span class="sig">*</span></td><td>.747<span class="sig">*</span></td><td><strong>.214</strong></td><td><strong>.421<span class="sig">*</span></strong></td><td><strong>.430<span class="sig">*</span></strong></td><td><strong>.313<span class="sig">*</span></strong></td></tr>
+<tr class="group-start"><td class="method">CogVideoX-5B</td><td class="method">Unsteered</td><td>.542</td><td>.433</td><td>.498</td><td>.244</td><td>.411</td><td>.216</td><td>.256</td><td>.478</td><td>.137</td><td>.197</td><td>.319</td><td>.235</td></tr>
+<tr><td class="method"></td><td class="method">Video-MSG</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>.287</td><td>.516</td><td>.302</td><td>.223</td><td>.417</td><td>.135</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr class="ours"><td class="method"></td><td class="method">T-LESSA (ours)</td><td><strong>.655<span class="sig">*</span></strong></td><td><strong>.578<span class="sig">*</span></strong></td><td><strong>.636<span class="sig">*</span></strong></td><td><strong>.350<span class="sig">*</span></strong></td><td><strong>.544<span class="sig">*</span></strong></td><td><strong>.320<span class="sig">*</span></strong></td><td><strong>.365<span class="sig">*</span></strong></td><td><strong>.566<span class="sig">*</span></strong></td><td><strong>.138</strong></td><td><strong>.297<span class="sig">*</span></strong></td><td><strong>.440<span class="sig">*</span></strong></td><td><strong>.303<span class="sig">*</span></strong></td></tr>
+<tr class="group-start"><td class="method">VideoCrafter2</td><td class="method">Unsteered</td><td>.452</td><td>.410</td><td>.312</td><td>.370</td><td>.498</td><td>.230</td><td>.190</td><td>.346</td><td>.133</td><td>.139</td><td>.286</td><td>.167</td></tr>
+<tr><td class="method"></td><td class="method">Free2Guide</td><td>.436</td><td>.405</td><td>.322</td><td>.364</td><td>.492</td><td>.229</td><td>.171</td><td>.303</td><td>.134</td><td>.137</td><td>.290</td><td>.157</td></tr>
+<tr class="ours"><td class="method"></td><td class="method">T-LESSA (ours)</td><td><strong>.488<span class="sig">*</span></strong></td><td><strong>.457<span class="sig">*</span></strong></td><td><strong>.334</strong></td><td><strong>.514<span class="sig">*</span></strong></td><td><strong>.672<span class="sig">*</span></strong></td><td><strong>.270<span class="sig">*</span></strong></td><td><strong>.266<span class="sig">*</span></strong></td><td><strong>.430<span class="sig">*</span></strong></td><td><strong>.139</strong></td><td><strong>.188<span class="sig">*</span></strong></td><td><strong>.347<span class="sig">*</span></strong></td><td><strong>.175</strong></td></tr>
+<tr class="group-start"><td class="method">AnimateDiff</td><td class="method">Unsteered</td><td>.405</td><td>.345</td><td>.297</td><td>.231</td><td>.414</td><td>.184</td><td>.186</td><td>.378</td><td>.133</td><td>.140</td><td>.293</td><td>.163</td></tr>
+<tr><td class="method"></td><td class="method">VideoGuide</td><td>.412</td><td><strong>.391</strong></td><td><strong>.304</strong></td><td>.259</td><td>.399</td><td>.182</td><td>.180</td><td>.367</td><td>.135</td><td>.133</td><td>.279</td><td>.166</td></tr>
+<tr class="ours"><td class="method"></td><td class="method">T-LESSA (ours)</td><td><strong>.435<span class="sig">*</span></strong></td><td>.381<span class="sig">*</span></td><td>.303</td><td><strong>.297<span class="sig">*</span></strong></td><td><strong>.533<span class="sig">*</span></strong></td><td><strong>.203<span class="sig">*</span></strong></td><td><strong>.221<span class="sig">*</span></strong></td><td><strong>.440<span class="sig">*</span></strong></td><td><strong>.137</strong></td><td><strong>.187</strong></td><td><strong>.324</strong></td><td><strong>.177</strong></td></tr>
+</tbody></table></div>
+      <p class="table-caption">
+        TL satisfaction on TLVBench, judged by Qwen2.5-VL-7B (Q), InternVL3-8B (I3) and NeuS-V (NV).
+        <span class="sig">*</span> marks \(p&lt;.05\) against the unsteered backbone (Wilcoxon signed-rank test on
+        prompt means over three seeds). SwitchCraft needs an ordered list of events, and Video-MSG's planner cannot
+        state that an object is absent, so neither applies to NEG or TEMPLOG. NeuS-V barely moves on ORDER because
+        nested eventualities can be satisfied by a single frame; the sequence metrics below measure ordering
+        directly.
+      </p>
+      <div class="bars" aria-label="Average relative TL-satisfaction gain over the unsteered backbone">
+        <div class="bar-row"><span>Wan2.1-14B</span><div class="bar-track"><div class="bar-fill" style="width: 61.4%"></div></div><span class="bar-value">+19.7%</span></div>
+        <div class="bar-row"><span>CogVideoX-5B</span><div class="bar-track"><div class="bar-fill" style="width: 100%"></div></div><span class="bar-value">+32.1%</span></div>
+        <div class="bar-row"><span>VideoCrafter2</span><div class="bar-track"><div class="bar-fill" style="width: 64.5%"></div></div><span class="bar-value">+20.7%</span></div>
+        <div class="bar-row"><span>AnimateDiff</span><div class="bar-track"><div class="bar-fill" style="width: 46.4%"></div></div><span class="bar-value">+14.9%</span></div>
+      </div>
+      <p class="table-caption has-text-centered">Average relative gain in TL satisfaction over the unsteered backbone.</p>
+    </div>
+
+    <div class="result-block">
+      <h3 class="title is-4">Events come out complete and in order</h3>
+      <div class="columns">
+        <div class="column">
+          <div class="table-container"><table class="table is-narrow is-hoverable results-table">
+<thead>
+<tr><th class="method"></th><th colspan="3">Wan2.1-14B</th><th colspan="3">CogVideoX-5B</th></tr>
+<tr><th class="method">Method</th><th>TC-Score</th><th>TCR</th><th>StoryEval</th><th>TC-Score</th><th>TCR</th><th>StoryEval</th></tr>
+</thead><tbody>
+<tr><td class="method">Unsteered</td><td>.675</td><td>.290</td><td>.336</td><td>.396</td><td>.060</td><td>.190</td></tr>
+<tr class="ours"><td class="method">T-LESSA</td><td><strong>.728</strong></td><td><strong>.360</strong></td><td><strong>.368</strong></td><td><strong>.489</strong></td><td><strong>.140</strong></td><td><strong>.240</strong></td></tr>
+</tbody></table></div>
+          <p class="table-caption">
+            Sequence completion: TC-Score and TCR from TCBench, and StoryEval's story-completion rate.
+            TCR requires all four TCBench assertions to pass, so it penalizes correct events in the wrong order.
+          </p>
+        </div>
+        <div class="column">
+          <div class="table-container"><table class="table is-narrow is-hoverable results-table">
+<thead>
+<tr><th class="method"></th><th colspan="3">One object</th><th colspan="3">Two objects</th></tr>
+<tr><th class="method">Objective</th><th>Acc.</th><th>Abs.</th><th>Pres.</th><th>Acc.</th><th>Static</th><th>Temp.</th></tr>
+</thead><tbody>
+<tr><td class="method">None (unsteered)</td><td>69.94</td><td>59.75</td><td>80.13</td><td>38.68</td><td>48.05</td><td>30.16</td></tr>
+<tr><td class="method">TempoControl</td><td>83.31</td><td>82.25</td><td><strong>84.38</strong></td><td>55.52</td><td>62.80</td><td><strong>48.89</strong></td></tr>
+<tr class="ours"><td class="method">T-LESSA</td><td><strong>87.25</strong></td><td><strong>93.50</strong></td><td>81.00</td><td>48.08</td><td>62.93</td><td>34.59</td></tr>
+<tr class="ours"><td class="method">T-LESSA + TC reg.</td><td>82.75</td><td>81.88</td><td>83.63</td><td><strong>55.92</strong></td><td><strong>68.54</strong></td><td>44.46</td></tr>
+</tbody></table></div>
+          <p class="table-caption">
+            TempoControl's latent-steering setup with only the objective replaced. The TL objective also steers
+            latents; TC reg. adds TempoControl's visibility and entropy terms.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-block">
+      <h3 class="title is-4">TL guidance also helps general compositional alignment</h3>
+      <div class="table-container"><table class="table is-narrow is-hoverable results-table">
+<thead>
+<tr><th class="method"></th><th colspan="3">Wan2.1-14B</th><th colspan="3">CogVideoX-5B</th><th colspan="3">AnimateDiff</th><th colspan="3">VideoCrafter2</th></tr>
+<tr><th class="method">Category</th><th>Unsteered</th><th>SwitchCraft</th><th>Ours</th><th>Unsteered</th><th>Video-MSG</th><th>Ours</th><th>Unsteered</th><th>VideoGuide</th><th>Ours</th><th>Unsteered</th><th>Free2Guide</th><th>Ours</th></tr>
+</thead><tbody>
+<tr><td class="method">Dynamic</td><td>.0823</td><td><strong>.1072</strong></td><td>.0939</td><td>.0146</td><td>.0101</td><td><strong>.0335</strong></td><td>.0127</td><td>.0094</td><td><strong>.0363</strong></td><td>.0122</td><td>.0083</td><td><strong>.0303</strong></td></tr>
+<tr><td class="method">Consistent</td><td><strong>.8220</strong></td><td>.8057</td><td>.8190</td><td>.7740</td><td>.6332</td><td><strong>.7954</strong></td><td>.6740</td><td>.6681</td><td><strong>.6769</strong></td><td>.7526</td><td><strong>.7908</strong></td><td>.7748</td></tr>
+<tr><td class="method">Action</td><td>.7213</td><td>.7241</td><td><strong>.7441</strong></td><td>.5317</td><td>.3722</td><td><strong>.5654</strong></td><td>.4198</td><td>.4126</td><td><strong>.4250</strong></td><td>.4822</td><td>.5148</td><td><strong>.5380</strong></td></tr>
+<tr><td class="method">Interaction</td><td>.6950</td><td>&ndash;</td><td><strong>.7113</strong></td><td>.5878</td><td>.1969</td><td><strong>.6109</strong></td><td><strong>.5574</strong></td><td>.5373</td><td>.5067</td><td>.6411</td><td>.6794</td><td><strong>.6831</strong></td></tr>
+</tbody></table></div>
+      <p class="table-caption">
+        T2V-CompBench, official 200 prompts per category. SwitchCraft does not apply to Interaction, where every
+        prompt describes a single event.
+      </p>
+    </div>
+
+    <div class="result-block">
+      <h3 class="title is-4">Video quality is largely preserved</h3>
+      <div class="table-container"><table class="table is-narrow is-hoverable results-table">
+<thead>
+<tr><th class="method">Method</th><th>Subject</th><th>Backgr.</th><th>Aesthetic</th><th>Imaging</th><th>Motion</th><th>Dynamic</th><th>Flicker</th><th>Temp. style</th><th>Objects</th><th>Spatial</th><th>Overall</th></tr>
+</thead><tbody>
+<tr class="group-start"><td class="method">Wan2.1-14B (unsteered)</td><td><strong>.9305</strong></td><td>.9725</td><td><strong>.6423</strong></td><td><strong>.6671</strong></td><td><strong>.9668</strong></td><td>.7917</td><td><strong>.9822</strong></td><td>.2486</td><td>.6471</td><td>.8013</td><td><strong>.2665</strong></td></tr>
+<tr class="ours"><td class="method">T-LESSA (ours)</td><td>.9255</td><td><strong>.9726</strong></td><td>.6367</td><td>.6583</td><td>.9657</td><td><strong>.8056</strong></td><td>.9819</td><td><strong>.2489</strong></td><td><strong>.7096</strong></td><td><strong>.8377</strong></td><td>.2638</td></tr>
+<tr class="group-start"><td class="method">VideoCrafter2 (unsteered)</td><td><strong>.9523</strong></td><td><strong>.9819</strong></td><td><strong>.6231</strong></td><td>.6548</td><td><strong>.9708</strong></td><td>.7500</td><td><strong>.9790</strong></td><td>.2631</td><td>.5038</td><td>.3554</td><td><strong>.2867</strong></td></tr>
+<tr class="ours"><td class="method">T-LESSA (ours)</td><td>.9332</td><td>.9736</td><td>.6092</td><td><strong>.6629</strong></td><td>.9538</td><td><strong>.8194</strong></td><td>.9719</td><td><strong>.2640</strong></td><td><strong>.5213</strong></td><td><strong>.4232</strong></td><td>.2861</td></tr>
+<tr class="group-start"><td class="method">CogVideoX-5B (unsteered)</td><td>.9487</td><td>.9725</td><td><strong>.6028</strong></td><td><strong>.6229</strong></td><td><strong>.9774</strong></td><td>.4306</td><td>.9724</td><td><strong>.2465</strong></td><td>.5488</td><td><strong>.5920</strong></td><td><strong>.2573</strong></td></tr>
+<tr class="ours"><td class="method">T-LESSA (ours)</td><td><strong>.9490</strong></td><td><strong>.9734</strong></td><td>.5752</td><td>.5725</td><td>.9753</td><td><strong>.5278</strong></td><td><strong>.9752</strong></td><td>.2395</td><td><strong>.6052</strong></td><td>.5087</td><td>.2522</td></tr>
+</tbody></table></div>
+      <p class="table-caption">
+        VBench, each dimension on its official prompt subset. T-LESSA raises Dynamic Degree and Multiple Objects
+        on all three backbones, and the overall score drops by less than .006. Steering adds 1.7% generation time
+        on Wan2.1-14B and 13.5% on CogVideoX-5B, with 2.96 and 0.19 GiB more peak memory.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <!-- TODO: add the arXiv id or venue once available. -->
+    <div class="bibtex-wrap">
+      <button class="button is-small bibtex-copy" type="button">Copy</button>
+      <pre><code id="bibtex-code">@misc{choi2026tlessa,
+  title  = {T-LESSA: Temporal-Logic Event Specification Steering of Video Diffusion Attention},
+  author = {Choi, Minkyu and Goel, Harsh and Homsi, Soamar and Chinchali, Sandeep},
+  year   = {2026},
+  url    = {https://utaustin-swarmlab.github.io/tlessa/}
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="acknowledgment" style="padding-top: 0;">
+  <div class="container is-max-desktop content">
+    <h2 class="title is-5">Acknowledgment</h2>
+    <p style="font-size: 0.92rem; color: #555;">
+      This work was supported by the Air Force Research Laboratory, Information and Spectrum Warfare Directorate
+      (AFRL/RF). The views and conclusions contained in this document are those of the authors and should not be
+      interpreted as representing the official policies, either expressed or implied, of the Air Force Research
+      Laboratory or the U.S. Government.
+    </p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered">
+          <p class="release-statement">
+            Approved for Public Release on 21 Oct 2026; Distribution Unlimited; Case Number: AFRL-2026-4443
+          </p>
+          <p>
+            Website source based on <a href="https://github.com/nerfies/nerfies.github.io">this source code</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
